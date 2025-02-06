@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { InjectModel } from "@nestjs/sequelize";
@@ -6,12 +12,14 @@ import { Users } from "./models/user.model";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import * as uuid from "uuid";
+import { MailService } from "../mail/mail.service";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(Users) private readonly usersModel: typeof Users,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService
   ) {}
 
   async getTokens(user: Users) {
@@ -33,7 +41,7 @@ export class UsersService {
     ]);
 
     return {
-      access_token: accessToken,
+      accessToken: accessToken,
       refreshToken: refreshToken,
     };
   }
@@ -51,15 +59,23 @@ export class UsersService {
       hashed_password,
       activation_link,
     });
+
+    try {
+      await this.mailService.sendMail(new_user);
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException("Xat yuborishda xatolik");
+    }
+
     return new_user;
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.usersModel.findAll();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} user`;
+    return this.usersModel.findOne({ where: { id } });
   }
 
   async findByEmail(email: string) {
@@ -74,7 +90,41 @@ export class UsersService {
     return user[1][0];
   }
 
+  async updateRefreshToken(id: number, hashed_refresh_token: string | null) {
+    const user = await this.usersModel.update(
+      { hashed_refresh_token },
+      { where: { id } }
+    );
+    return user;
+  }
+
   remove(id: number) {
-    return `This action removes a #${id} user`;
+    return this.usersModel.destroy({ where: { id } });
+  }
+
+  async activate(activation_link: string) {
+    const oldUser = await this.usersModel.findOne({
+      where: { activation_link },
+    });
+
+    if (!oldUser) {
+      throw new NotFoundException("User yoki activation link topilmadi");
+    }
+
+    if (oldUser.is_active) {
+      throw new ConflictException("User avval aktivlashtirilgan");
+    }
+
+    const user = await this.usersModel.update(
+      { is_active: true },
+      { where: { activation_link }, returning: true }
+    );
+
+    const response = {
+      message: "User muvaffaqiyatli aktivlashtirildi",
+      user: user[1][0].is_active,
+    };
+
+    return response;
   }
 }

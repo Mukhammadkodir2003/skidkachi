@@ -41,7 +41,7 @@ export class Users extends Model<Users, IUserInterfaceAttr> {
   is_owner: boolean;
 
   @Column({ type: DataType.STRING })
-  hashed_refresh_token: string;
+  hashed_refresh_token: string | null;
 
   @Column({ type: DataType.STRING })
   activation_link: string;
