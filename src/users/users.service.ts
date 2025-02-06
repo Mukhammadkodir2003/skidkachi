@@ -62,8 +62,16 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findByEmail(email: string) {
+    return this.usersModel.findOne({ where: { email } });
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const user = await this.usersModel.update(updateUserDto, {
+      where: { id },
+      returning: true,
+    });
+    return user[1][0];
   }
 
   remove(id: number) {

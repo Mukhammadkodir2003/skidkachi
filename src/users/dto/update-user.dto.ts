@@ -14,4 +14,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail()
   email: string;
+
+  @IsOptional()
+  @IsString()
+  hashed_refresh_token: string;
 }
