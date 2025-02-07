@@ -7,6 +7,12 @@ import { UsersModule } from "./users/users.module";
 import { Users } from "./users/models/user.model";
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
+import { DiscountModule } from './discount/discount.module';
+import { PhotoModule } from './photo/photo.module';
+import { AdminModule } from './admin/admin.module';
+import { SocialLinkModule } from './social_link/social_link.module';
+import { CategoryModule } from './category/category.module';
+import { DiscountTypeModule } from './discount_type/discount_type.module';
 
 @Module({
   imports: [
@@ -26,6 +32,12 @@ import { MailModule } from './mail/mail.module';
     UsersModule,
     AuthModule,
     MailModule,
+    DiscountModule,
+    PhotoModule,
+    AdminModule,
+    SocialLinkModule,
+    CategoryModule,
+    DiscountTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
