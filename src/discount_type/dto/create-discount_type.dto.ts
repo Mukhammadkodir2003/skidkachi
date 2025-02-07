@@ -1,1 +1,4 @@
-export class CreateDiscountTypeDto {}
+export class CreateDiscountTypeDto {
+  name: string;
+  description: string;
+}
