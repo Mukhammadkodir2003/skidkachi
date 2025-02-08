@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -65,6 +66,74 @@ export class AuthService {
 
     const response = {
       message: "Tizimga kirildi",
+      userId: user.id,
+      access_token: tokens.accessToken,
+    };
+
+    return response;
+  }
+
+  async signout(refreshToken: string, res: Response) {
+    const userData = await this.jwtService.verify(refreshToken, {
+      secret: process.env.REFRESH_TOKEN_KEY,
+    });
+    if (!userData) {
+      throw new ForbiddenException("User not verified");
+    }
+
+    const hashed_refresh_token = null;
+    await this.userService.updateRefreshToken(
+      userData.id,
+      hashed_refresh_token
+    );
+
+    res.clearCookie("refresh_token");
+    const response = {
+      message: "User logged out successfully",
+    };
+    return response;
+  }
+
+  async refreshToken(userId: number, refreshToken: string, res: Response) {
+    const decodedToken = await this.jwtService.decode(refreshToken);
+
+    if (userId != decodedToken.id) {
+      throw new ForbiddenException("Ruxsat etilmagan");
+    }
+    const user = await this.userService.findOne(userId);
+
+    if (!user || !user.hashed_refresh_token) {
+      throw new BadRequestException("User not found");
+    }
+
+    const tokenMatch = await bcrypt.compare(
+      refreshToken,
+      user.hashed_refresh_token
+    );
+
+    if (!tokenMatch) {
+      throw new ForbiddenException("Forbidden");
+    }
+
+    const tokens = await this.userService.getTokens(user);
+
+    const hashed_refresh_token = await bcrypt.hash(tokens.refreshToken, 7);
+
+    const updatedUser = await this.userService.updateRefreshToken(
+      user.id,
+      hashed_refresh_token
+    );
+    if (!updatedUser) {
+      throw new InternalServerErrorException("Tokenni saqlashda xatolik");
+    }
+
+    res.cookie("refresh_token", tokens.refreshToken, {
+      maxAge: Number(process.env.COOKIE_TIME),
+      httpOnly: true,
+    });
+
+    const response = {
+      message: "Tokenlar yangilandi",
       userId: user.id,
       access_token: tokens.accessToken,
     };

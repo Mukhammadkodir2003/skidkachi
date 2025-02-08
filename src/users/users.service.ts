@@ -13,6 +13,8 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import * as uuid from "uuid";
 import { MailService } from "../mail/mail.service";
+import { FindUserDto } from "./dto/find-user.dto";
+import { Op } from "sequelize";
 
 @Injectable()
 export class UsersService {
@@ -126,5 +128,33 @@ export class UsersService {
     };
 
     return response;
+  }
+
+  async findUser(findUserDto: FindUserDto) {
+    const { name, email, phone } = findUserDto;
+    const where = {};
+    if (name) {
+      where["name"] = {
+        [Op.like]: `%${name}%`,
+      };
+    }
+    if (email) {
+      where["email"] = {
+        [Op.like]: `%${email}%`,
+      };
+    }
+    if (phone) {
+      where["phone"] = {
+        [Op.like]: `%${phone}%`,
+      };
+    }
+
+    console.log(where);
+
+    const users = await this.usersModel.findAll({ where });
+    if (!users) {
+      throw new NotFoundException("Users not found");
+    }
+    return users;
   }
 }
