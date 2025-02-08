@@ -1,26 +1,40 @@
-import { Injectable } from '@nestjs/common';
-import { CreateStoreSubscribeDto } from './dto/create-store-subscribe.dto';
-import { UpdateStoreSubscribeDto } from './dto/update-store-subscribe.dto';
+import { Injectable } from "@nestjs/common";
+import { CreateStoreSubscribeDto } from "./dto/create-store-subscribe.dto";
+import { UpdateStoreSubscribeDto } from "./dto/update-store-subscribe.dto";
+import { StoreSubscribe } from "./models/store-subscribe.model";
+import { InjectModel } from "@nestjs/sequelize";
 
 @Injectable()
 export class StoreSubscribeService {
+  constructor(
+    @InjectModel(StoreSubscribe)
+    private storeSubscribeModel: typeof StoreSubscribe
+  ) {}
   create(createStoreSubscribeDto: CreateStoreSubscribeDto) {
-    return 'This action adds a new storeSubscribe';
+    return this.storeSubscribeModel.create(createStoreSubscribeDto);
   }
 
   findAll() {
-    return `This action returns all storeSubscribe`;
+    return this.storeSubscribeModel.findAll();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} storeSubscribe`;
+    return this.storeSubscribeModel.findByPk(id);
   }
 
-  update(id: number, updateStoreSubscribeDto: UpdateStoreSubscribeDto) {
-    return `This action updates a #${id} storeSubscribe`;
+  async update(id: number, updateStoreSubscribeDto: UpdateStoreSubscribeDto) {
+    const storeSubscribe = await this.storeSubscribeModel.update(
+      updateStoreSubscribeDto,
+      {
+        where: { id },
+        returning: true,
+      }
+    );
+
+    return storeSubscribe[1][0];
   }
 
   remove(id: number) {
-    return `This action removes a #${id} storeSubscribe`;
+    return this.storeSubscribeModel.destroy({ where: { id } });
   }
 }

@@ -1,26 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import { CreateDiscountDto } from './dto/create-discount.dto';
-import { UpdateDiscountDto } from './dto/update-discount.dto';
+import { Injectable } from "@nestjs/common";
+import { CreateDiscountDto } from "./dto/create-discount.dto";
+import { UpdateDiscountDto } from "./dto/update-discount.dto";
+import { Discount } from "./models/discount.model";
+import { InjectModel } from "@nestjs/sequelize";
 
 @Injectable()
 export class DiscountService {
+  constructor(
+    @InjectModel(Discount)
+    private discountModel: typeof Discount
+  ) {}
+
   create(createDiscountDto: CreateDiscountDto) {
-    return 'This action adds a new discount';
+    return this.discountModel.create(createDiscountDto);
   }
 
   findAll() {
-    return `This action returns all discount`;
+    return this.discountModel.findAll();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} discount`;
+    return this.discountModel.findByPk(id);
   }
 
-  update(id: number, updateDiscountDto: UpdateDiscountDto) {
-    return `This action updates a #${id} discount`;
+  async update(id: number, updateDiscountDto: UpdateDiscountDto) {
+    const discount = await this.discountModel.update(updateDiscountDto, {
+      where: { id },
+      returning: true,
+    });
+
+    return discount[1][0];
   }
 
   remove(id: number) {
-    return `This action removes a #${id} discount`;
+    return this.discountModel.destroy({ where: { id } });
   }
 }

@@ -1,26 +1,36 @@
 import { Injectable } from "@nestjs/common";
 import { CreatePhotoDto } from "./dto/create-photo.dto";
 import { UpdatePhotoDto } from "./dto/update-photo.dto";
+import { Photo } from "./models/photo.model";
+import { InjectModel } from "@nestjs/sequelize";
 
 @Injectable()
 export class PhotoService {
+  constructor(
+    @InjectModel(Photo)
+    private photoModel: typeof Photo
+  ) {}
   create(createPhotoDto: CreatePhotoDto) {
-    return "This action adds a new photo";
+    return this.photoModel.create(createPhotoDto);
   }
 
   findAll() {
-    return `This action returns all photo`;
+    return this.photoModel.findAll();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} photo`;
+    return this.photoModel.findByPk(id);
   }
 
-  update(id: number, updatePhotoDto: UpdatePhotoDto) {
-    return `This action updates a #${id} photo`;
+  async update(id: number, updatePhotoDto: UpdatePhotoDto) {
+    const photo = await this.photoModel.update(updatePhotoDto, {
+      where: { id },
+      returning: true,
+    });
+    return photo[1][0];
   }
 
   remove(id: number) {
-    return `This action removes a #${id} photo`;
+    return this.photoModel.destroy({ where: { id } });
   }
 }
