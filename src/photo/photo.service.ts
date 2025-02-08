@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePhotoDto } from './dto/create-photo.dto';
-import { UpdatePhotoDto } from './dto/update-photo.dto';
+import { Injectable } from "@nestjs/common";
+import { CreatePhotoDto } from "./dto/create-photo.dto";
+import { UpdatePhotoDto } from "./dto/update-photo.dto";
 
 @Injectable()
 export class PhotoService {
   create(createPhotoDto: CreatePhotoDto) {
-    return 'This action adds a new photo';
+    return "This action adds a new photo";
   }
 
   findAll() {

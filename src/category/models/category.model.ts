@@ -1,4 +1,4 @@
-import { Column, DataType, Model } from "sequelize-typescript";
+import { Column, DataType, Model, Table } from "sequelize-typescript";
 
 interface ICategoryCreationAttr {
   name: string;
@@ -6,6 +6,7 @@ interface ICategoryCreationAttr {
   parent_category: number;
 }
 
+@Table({ tableName: "category", timestamps: true })
 export class Category extends Model<Category, ICategoryCreationAttr> {
   @Column({
     type: DataType.INTEGER,
