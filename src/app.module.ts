@@ -18,6 +18,8 @@ import { TelegrafModule } from "nestjs-telegraf";
 import { BOT_NAME } from "./app.constants";
 import { StoreModule } from "./store/store.module";
 import { StoreSubscribeModule } from "./store-subscribe/store-subscribe.module";
+import { Bot } from "./bot/models/bot.model";
+import { Address } from "./bot/models/address.model";
 
 @Module({
   imports: [
@@ -37,9 +39,9 @@ import { StoreSubscribeModule } from "./store-subscribe/store-subscribe.module";
       port: Number(process.env.POSTGRES_PORT),
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      models: [Users],
+      models: [Users, Bot, Address],
       autoLoadModels: true,
-      sync: { force: true },
+      sync: { alter: true },
       logging: false,
     }),
     UsersModule,

@@ -9,6 +9,8 @@ export const CookieGetter = createParamDecorator(
     const request = context.switchToHttp().getRequest();
 
     const refreshToken = request.cookies[data];
+    console.log(request.cookies);
+    
 
     if (!refreshToken) {
       throw new UnauthorizedException("Token not found");
