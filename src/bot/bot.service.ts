@@ -5,16 +5,20 @@ import { InjectBot } from "nestjs-telegraf";
 import { BOT_NAME } from "../app.constants";
 import { Context, Markup, Telegraf } from "telegraf";
 import { Address } from "./models/address.model";
+import { Car } from "./models/car.model";
 
 @Injectable()
 export class BotService {
   constructor(
     @InjectModel(Bot) private readonly botModel: typeof Bot,
     @InjectModel(Address) private readonly addressModel: typeof Address,
+    @InjectModel(Car) private readonly carModel: typeof Car,
     @InjectBot(BOT_NAME) private readonly bot: Telegraf<Context>
   ) {}
 
   async start(ctx: Context) {
+    console.log("A");
+
     const user_id = ctx.from!.id;
     const user = await this.botModel.findByPk(user_id);
     if (!user) {
@@ -105,7 +109,7 @@ export class BotService {
         user.phone_number = "";
         await user.save();
         await ctx.reply(
-          `Ketayotganing yaxshi bo'ldi, chatda havo tiniqlashadi. Ammo baribir ortga qaytasan, chunki seniz bu yer zerikarli. Ko‘rishguncha, sharmandalar qiroli! 👋😂`,
+          `Ketayotganing yaxshi bo'ldi, chatda havo tiniqlashadi. Ammo baribir ortga qaytasan, chunki seniz bu yer zerikarli. Ko'rishguncha, sharmandalar qiroli! 👋😂`,
           {
             parse_mode: "HTML",
             ...Markup.removeKeyboard(),
@@ -169,7 +173,16 @@ export class BotService {
             where: { user_id },
             order: [["id", "DESC"]],
           });
-          if (address && address.last_state !== "finish") {
+          const car = await this.carModel.findOne({
+            where: { user_id },
+            order: [["id", "DESC"]],
+          });
+          if (
+            user &&
+            user.action == "address" &&
+            address &&
+            address.last_state !== "finish"
+          ) {
             if (address.last_state == "name") {
               address.name = ctx.message.text;
               address.last_state = "address";
@@ -188,6 +201,79 @@ export class BotService {
                   [Markup.button.locationRequest("📍 Lokatsiya yuborish")],
                 ]).resize(),
               });
+            }
+          }
+          if (
+            user &&
+            user.action == "car" &&
+            car &&
+            car.last_state !== "finish"
+          ) {
+            if (car.last_state == "model") {
+              car.model = ctx.message.text;
+              car.last_state = "number";
+              await car.save();
+              await ctx.reply(
+                `Avtomobil raqamini kiriting (masalan: <i>01 A123BC</i>):`,
+                {
+                  parse_mode: "HTML",
+                  ...Markup.removeKeyboard(),
+                }
+              );
+            } else if (car.last_state == "number") {
+              if (
+                ctx.message.text.match(
+                  /^(0[1-9]|1[0-9]|2[0-7]) ([A-Z]{1,2}\d{3}[A-Z]{2}|\d{3}[A-Z]{3})$/
+                )
+              ) {
+                car.number = ctx.message.text;
+                car.last_state = "color";
+                await car.save();
+                await ctx.reply(`Avtomobil rangini kiriting:`, {
+                  parse_mode: "HTML",
+                  ...Markup.removeKeyboard(),
+                });
+              } else {
+                await ctx.reply("Noto'g'ri raqam formati. Masalan: 01 A123BC", {
+                  parse_mode: "HTML",
+                  ...Markup.removeKeyboard(),
+                });
+              }
+            } else if (car.last_state == "color") {
+              car.color = ctx.message.text;
+              car.last_state = "year";
+              await car.save();
+              await ctx.reply(`Avtomobil ishlab chiqarilgan yilni kiriting:`, {
+                parse_mode: "HTML",
+                ...Markup.removeKeyboard(),
+              });
+            } else if (car.last_state == "year") {
+              const year = parseInt(ctx.message.text);
+              if (
+                isNaN(year) ||
+                year < 1900 ||
+                year > new Date().getFullYear()
+              ) {
+                await ctx.reply(
+                  "Noto'g'ri yil formati. Iltimos, to'g'ri yilni kiriting:",
+                  {
+                    parse_mode: "HTML",
+                    ...Markup.removeKeyboard(),
+                  }
+                );
+              } else {
+                car.year = year;
+                car.last_state = "finish";
+                await car.save();
+                user.action = "";
+                await user.save();
+                await ctx.reply(`Avtomobil muvaffaqiyatli qo'shildi!`, {
+                  parse_mode: "HTML",
+                  ...Markup.keyboard([
+                    ["Mening avtomobillarim", "Yangi avtomobil qo'shish"],
+                  ]).resize(),
+                });
+              }
             }
           }
         }

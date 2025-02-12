@@ -33,4 +33,7 @@ export class Bot extends Model<Bot, IBotCreationAttr> {
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   status: boolean;
+
+  @Column({ type: DataType.STRING })
+  action: string;
 }

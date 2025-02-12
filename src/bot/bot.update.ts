@@ -1,12 +1,4 @@
-import {
-  Action,
-  Command,
-  Ctx,
-  Hears,
-  On,
-  Start,
-  Update,
-} from "nestjs-telegraf";
+import { Command, Ctx, On, Start, Update } from "nestjs-telegraf";
 import { Context, Markup } from "telegraf";
 import { BotService } from "./bot.service";
 

@@ -44,6 +44,8 @@ export class AddressService {
           ...Markup.keyboard([["/start"]]).resize(),
         });
       } else {
+        user.action = "address";
+        user?.save();
         await this.addressModel.create({ user_id, last_state: "name" });
         await ctx.reply(
           `Yangi manzil nomini kiriting (masalan: <i>uyim</i>): `,
@@ -53,7 +55,6 @@ export class AddressService {
           }
         );
       }
-
       // await ctx.reply(``);
     } catch (err) {
       console.log("onCommandNewAddress error:", err);

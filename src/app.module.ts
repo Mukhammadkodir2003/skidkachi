@@ -20,13 +20,23 @@ import { StoreModule } from "./store/store.module";
 import { StoreSubscribeModule } from "./store-subscribe/store-subscribe.module";
 import { Bot } from "./bot/models/bot.model";
 import { Address } from "./bot/models/address.model";
+import { Car } from "./bot/models/car.model";
+import { DistrictModule } from "./district/district.module";
+import { RegionModule } from "./region/region.module";
+import { FileAmazonModule } from "./file-amazon/file-amazon.module";
+import { FileModule } from "./file/file.module";
+import { FavouriteModule } from "./favourite/favourite.module";
+import { Store } from "./store/models/store.model";
+import { District } from "./district/model/district.model";
+import { Region } from "./region/model/region.model";
+import { SocialLink } from "./social_link/models/social_link.model";
 
 @Module({
   imports: [
     TelegrafModule.forRootAsync({
       botName: BOT_NAME,
       useFactory: () => ({
-        token: process.env.BOT_TOKEN!,
+        token: process.env.BOT_TOKEN || "12345",
         middlewares: [],
         include: [BotModule],
       }),
@@ -39,24 +49,28 @@ import { Address } from "./bot/models/address.model";
       port: Number(process.env.POSTGRES_PORT),
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      models: [Users, Bot, Address],
+      models: [Users, Bot, Address, Car, Store, District, Region, SocialLink],
       autoLoadModels: true,
-      sync: { alter: true },
+      sync: { force: true },
       logging: false,
     }),
+    AdminModule,
     UsersModule,
-
     AuthModule,
     MailModule,
-    DiscountModule,
-    PhotoModule,
-    AdminModule,
+    DistrictModule,
+    RegionModule,
+    FileAmazonModule,
+    FileModule,
     SocialLinkModule,
-    CategoryModule,
     DiscountTypeModule,
+    CategoryModule,
     BotModule,
     StoreModule,
     StoreSubscribeModule,
+    DiscountModule,
+    FavouriteModule,
+    PhotoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,7 +6,7 @@ import {
   Model,
   Table,
 } from "sequelize-typescript";
-import { User } from "../../users/models/user.model";
+import { Users } from "../../users/models/user.model";
 import { Discount } from "../../discount/models/discount.model";
 
 interface IFavouriteCreationAttr {
@@ -16,12 +16,12 @@ interface IFavouriteCreationAttr {
 
 @Table({ tableName: "favourite" })
 export class Favourite extends Model<Favourite, IFavouriteCreationAttr> {
-  @ForeignKey(() => User)
+  @ForeignKey(() => Users)
   @Column({ type: DataType.INTEGER })
   userId: number;
 
-  @BelongsTo(() => User)
-  user: User;
+  @BelongsTo(() => Users)
+  user: Users;
 
   @ForeignKey(() => Discount)
   @Column({ type: DataType.INTEGER })

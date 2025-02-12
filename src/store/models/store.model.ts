@@ -1,5 +1,15 @@
-import { Column, DataType, Model, Table, HasMany } from "sequelize-typescript";
+import {
+  Column,
+  DataType,
+  Model,
+  Table,
+  HasMany,
+  BelongsTo,
+  ForeignKey,
+} from "sequelize-typescript";
 import { SocialLink } from "../../social_link/models/social_link.model";
+import { District } from "../../district/model/district.model";
+import { Region } from "../../region/model/region.model";
 
 interface IStoreCreationAttr {
   name: string;
@@ -28,9 +38,11 @@ export class Store extends Model<Store, IStoreCreationAttr> {
   @Column({ type: DataType.INTEGER, allowNull: false })
   owner_id: number;
 
+  @ForeignKey(() => District)
   @Column({ type: DataType.INTEGER, allowNull: false })
   district_id: number;
 
+  @ForeignKey(() => Region)
   @Column({ type: DataType.INTEGER, allowNull: false })
   region_id: number;
 
@@ -42,4 +54,10 @@ export class Store extends Model<Store, IStoreCreationAttr> {
 
   @HasMany(() => SocialLink)
   socialLinks: SocialLink[];
+
+  @BelongsTo(() => District)
+  district: District;
+
+  @BelongsTo(() => Region)
+  region: Region;
 }
