@@ -20,7 +20,6 @@ import { StoreModule } from "./store/store.module";
 import { StoreSubscribeModule } from "./store-subscribe/store-subscribe.module";
 import { Bot } from "./bot/models/bot.model";
 import { Address } from "./bot/models/address.model";
-import { Car } from "./bot/models/car.model";
 import { DistrictModule } from "./district/district.module";
 import { RegionModule } from "./region/region.module";
 import { FileAmazonModule } from "./file-amazon/file-amazon.module";
@@ -30,6 +29,8 @@ import { Store } from "./store/models/store.model";
 import { District } from "./district/model/district.model";
 import { Region } from "./region/model/region.model";
 import { SocialLink } from "./social_link/models/social_link.model";
+import { OtpModule } from "./otp/otp.module";
+import { Otp } from "./otp/models/otp.model";
 
 @Module({
   imports: [
@@ -49,9 +50,9 @@ import { SocialLink } from "./social_link/models/social_link.model";
       port: Number(process.env.POSTGRES_PORT),
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      models: [Users, Bot, Address, Car, Store, District, Region, SocialLink],
+      models: [Users, Bot, Address, Store, District, Region, SocialLink, Otp],
       autoLoadModels: true,
-      sync: { force: true },
+      sync: { alter: true },
       logging: false,
     }),
     AdminModule,
@@ -71,6 +72,7 @@ import { SocialLink } from "./social_link/models/social_link.model";
     DiscountModule,
     FavouriteModule,
     PhotoModule,
+    OtpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

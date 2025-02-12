@@ -7,10 +7,16 @@ interface ICarCreationAttr {
 
 @Table({ tableName: "car" })
 export class Car extends Model<Car, ICarCreationAttr> {
-  @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
+  @Column({
+    type: DataType.BIGINT,
+    primaryKey: true,
+    autoIncrement: true,
+  })
   id: number;
 
-  @Column({ type: DataType.INTEGER })
+  @Column({
+    type: DataType.BIGINT,
+  })
   user_id: number;
 
   @Column({ type: DataType.STRING })

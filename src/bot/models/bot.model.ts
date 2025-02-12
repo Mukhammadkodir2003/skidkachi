@@ -36,4 +36,7 @@ export class Bot extends Model<Bot, IBotCreationAttr> {
 
   @Column({ type: DataType.STRING })
   action: string;
+
+  @Column({ type: DataType.STRING, defaultValue: "" })
+  temp: string;
 }

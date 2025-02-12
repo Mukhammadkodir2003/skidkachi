@@ -22,7 +22,6 @@ export class AddressService {
           [
             "Mening manzillarim",
             "Yangi manzil qo'shish",
-            Markup.button.locationRequest("Eng yaqin manzillar"),
           ],
         ]).resize(),
       });
@@ -107,54 +106,13 @@ export class AddressService {
       console.log("onCommandMyAddressError");
     }
   }
-  async onCommandNearAddresses(ctx: Context) {
-    try {
-      const user_id = ctx.from?.id;
-      const user = await this.botModel.findByPk(user_id);
-      if (!user || !user.status) {
-        await ctx.reply(`Siz avval ro'yxatdan o'tishni yakunlang`, {
-          parse_mode: "HTML",
-          ...Markup.keyboard([["/start"]]).resize(),
-        });
-      } else {
-        const addresses = await this.addressModel.findAll({
-          where: { user_id, last_state: "finish" },
-        });
-
-        addresses.forEach(async (address) => {
-          await ctx.replyWithHTML(
-            `<b>Manzil nomi:</b> ${address.name}\n` +
-              `<b>Manzil:</b> ${address.address}\n`,
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: "Lokatsiyani ko'rish",
-                      callback_data: `getLoc_${address.id}`,
-                    },
-                    {
-                      text: "Manzilni o'chirish",
-                      callback_data: `delLoc_${address.id}`,
-                    },
-                  ],
-                ],
-              },
-            }
-          );
-        });
-      }
-    } catch (err) {
-      console.log("onCommandMyAddressError");
-    }
-  }
 
   async onClickLocation(ctx: Context) {
     try {
       const action = ctx.callbackQuery!["data"];
       const addressId = action.split("_")[1];
       const address = await this.addressModel.findByPk(addressId);
-      ctx.replyWithLocation(
+      await ctx.replyWithLocation(
         Number(address?.location![0]),
         Number(address?.location![1])
       );
@@ -167,10 +125,12 @@ export class AddressService {
     try {
       const action = ctx.callbackQuery!["data"];
       const addressId = action.split("_")[1];
-      const address = await this.addressModel.destroy({
+      const messageId = ctx.message?.message_id;
+      await ctx.deleteMessage(messageId);
+      await this.addressModel.destroy({
         where: { id: addressId },
       });
-      ctx.replyWithHTML(`Muvaffaqiyatli o'chirildi`);
+     await ctx.replyWithHTML(`Muvaffaqiyatli o'chirildi`);
     } catch (err) {
       console.log("onClickLocation error:", err);
     }

@@ -16,14 +16,14 @@ export class CarService {
 
   async onCar(ctx: Context) {
     try {
-      await ctx.reply(`Foydalanuvchi avtomobillari!`, {
+      await ctx.reply(`🚗 Foydalanuvchi mashinalari!`, {
         parse_mode: "HTML",
         ...Markup.keyboard([
-          ["Mening avtomobillarim", "Yangi avtomobil qo'shish"],
+          ["🚗 Mening mashinalarim", "➕ Yangi mashina qo'shish"],
         ]).resize(),
       });
     } catch (err) {
-      console.log("OnCar error:", err);
+      console.log("OnStop error:", err);
     }
   }
 
@@ -32,16 +32,16 @@ export class CarService {
       const user_id = ctx.from?.id;
       const user = await this.botModel.findByPk(user_id);
       if (!user || !user.status) {
-        await ctx.reply(`Siz avval ro'yxatdan o'tishni yakunlang`, {
+        await ctx.reply(`⚠️ Siz avval ro'yxatdan o'tishni yakunlang`, {
           parse_mode: "HTML",
           ...Markup.keyboard([["/start"]]).resize(),
         });
       } else {
         user.action = "car";
-        user?.save();
-        await this.carModel.create({ user_id, last_state: "model" });
+        await user.save();
+        await this.carModel.create({ user_id, last_state: "number" });
         await ctx.reply(
-          `Yangi avtomobil modelini kiriting (masalan: <i>Nexia 2</i>): `,
+          `🔢 Yangi mashina raqamini kiriting (masalan: <i>01A777AA</i>): `,
           {
             parse_mode: "HTML",
             ...Markup.removeKeyboard(),
@@ -53,12 +53,12 @@ export class CarService {
     }
   }
 
-  async onCommandMyCares(ctx: Context) {
+  async onCommandMyCars(ctx: Context) {
     try {
       const user_id = ctx.from?.id;
       const user = await this.botModel.findByPk(user_id);
       if (!user || !user.status) {
-        await ctx.reply(`Siz avval ro'yxatdan o'tishni yakunlang`, {
+        await ctx.reply(`⚠️ Siz avval ro'yxatdan o'tishni yakunlang`, {
           parse_mode: "HTML",
           ...Markup.keyboard([["/start"]]).resize(),
         });
@@ -66,31 +66,38 @@ export class CarService {
         const cars = await this.carModel.findAll({
           where: { user_id, last_state: "finish" },
         });
+        if (cars.length === 0) {
+          await ctx.reply(`🚗 Siz hali mashina qo'shmagansiz`, {
+            parse_mode: "HTML",
+            ...Markup.keyboard([["➕ Yangi mashina qo'shish"]]).resize(),
+          });
+        }
 
-        cars.forEach(async (car) => {
+        for (const car of cars) {
           await ctx.replyWithHTML(
-            `<b>Avtomobil modeli:</b> ${car.model}\n` +
-              `<b>Raqami:</b> ${car.number}\n` +
-              `<b>Rangi:</b> ${car.color}\n` +
-              `<b>Yili:</b> ${car.year}`,
+            `🚗 <b>Mashina ma'lumotlari:</b>\n\n` +
+              `🔢 <b>Raqami:</b> ${car.number}\n` +
+              `📝 <b>Modeli:</b> ${car.model}\n` +
+              `🎨 <b>Rangi:</b> ${car.color}\n` +
+              `📅 <b>Yili:</b> ${car.year}\n`,
             {
               reply_markup: {
                 inline_keyboard: [
                   [
                     {
-                      text: "Avtomobilni taxrirlash",
-                      callback_data: `getCar_${car.id}`,
+                      text: "🗑 Mashinani o'chirish",
+                      callback_data: `delCar_${car.id}`,
                     },
                     {
-                      text: "Avtomobilni o'chirish",
-                      callback_data: `delCar_${car.id}`,
+                      text: "✏️ Mashinani tahrirlash",
+                      callback_data: `editCar_${car.id}`,
                     },
                   ],
                 ],
               },
             }
           );
-        });
+        }
       }
     } catch (err) {
       console.log("onCommandMyCarsError");
@@ -101,71 +108,91 @@ export class CarService {
     try {
       const action = ctx.callbackQuery!["data"];
       const carId = action.split("_")[1];
+      if (ctx.callbackQuery?.message) {
+        await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+      }
       await this.carModel.destroy({
         where: { id: carId },
       });
-      await ctx.replyWithHTML(`Muvaffaqiyatli o'chirildi`);
+      await ctx.replyWithHTML(`✅ Muvaffaqiyatli o'chirildi`);
     } catch (err) {
       console.log("onClickDelCar error:", err);
     }
   }
 
-  async onText(ctx: Context) {
+  async onClickEditCar(ctx: Context) {
     try {
-      if ("text" in ctx.message!) {
-        const user_id = ctx.from?.id;
-        const user = await this.botModel.findByPk(user_id);
-        if (!user || !user.status) {
-          await ctx.reply(`Siz avval ro'yxatdan o'tishni yakunlang`, {
-            parse_mode: "HTML",
-            ...Markup.keyboard([["/start"]]).resize(),
-          });
-        } else {
-          const car = await this.carModel.findOne({
-            where: { user_id },
-            order: [["id", "DESC"]],
-          });
-          if (car && car.last_state !== "finish") {
-            if (car.last_state == "model") {
-              car.model = ctx.message.text;
-              car.last_state = "number";
-              await car.save();
-              await ctx.reply(`Avtomobil raqamini kiriting:`, {
-                parse_mode: "HTML",
-                ...Markup.removeKeyboard(),
-              });
-            } else if (car.last_state == "number") {
-              car.number = ctx.message.text;
-              car.last_state = "color";
-              await car.save();
-              await ctx.reply(`Avtomobil rangini kiriting:`, {
-                parse_mode: "HTML",
-                ...Markup.removeKeyboard(),
-              });
-            } else if (car.last_state == "color") {
-              car.color = ctx.message.text;
-              car.last_state = "year";
-              await car.save();
-              await ctx.reply(`Avtomobil yilini kiriting:`, {
-                parse_mode: "HTML",
-                ...Markup.removeKeyboard(),
-              });
-            } else if (car.last_state == "year") {
-              car.year = parseInt(ctx.message.text);
-              car.last_state = "finish";
-              await car.save();
-              await ctx.reply(`Avtomobil muvaffaqiyatli qo'shildi!`, {
-                parse_mode: "HTML",
-                ...Markup.keyboard([
-                  ["Mening avtomobillarim", "Yangi avtomobil qo'shish"],
-                ]).resize(),
-              });
-            }
-          }
+      const messageId = ctx.callbackQuery?.message?.message_id;
+      const action = ctx.callbackQuery!["data"];
+      const carId = action.split("_")[1];
+      const user_id = ctx.from?.id;
+      const user = await this.botModel.findByPk(user_id);
+
+      if (messageId && user) {
+        await ctx.reply(`✏️ Tahrirlash turini tanlang:`, {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔢 Raqamni o'zgartirish",
+                  callback_data: `editCarNumber_${carId}`,
+                },
+                {
+                  text: "📝 Modelni o'zgartirish",
+                  callback_data: `editCarModel_${carId}`,
+                },
+              ],
+              [
+                {
+                  text: "🎨 Rangni o'zgartirish",
+                  callback_data: `editCarColor_${carId}`,
+                },
+                {
+                  text: "�� Yilni o'zgartirish",
+                  callback_data: `editCarYear_${carId}`,
+                },
+              ],
+            ],
+          },
+        });
+
+        // Delete the original message to avoid confusion
+        if (ctx.callbackQuery?.message) {
+          await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
         }
       }
     } catch (err) {
-      console.log("onText error:", err);
+      console.log("onClickEditCar error:", err);
+    }
+  }
+
+  async onEditCarField(ctx: Context, field: string) {
+    try {
+      const action = ctx.callbackQuery!["data"];
+      const carId = action.split("_")[1];
+      const user_id = ctx.from?.id;
+      const user = await this.botModel.findByPk(user_id);
+
+      if (user) {
+        user.action = `editCar${field}`;
+        user.temp = carId;
+        await user.save();
+
+        const emoji = {
+          Number: "🔢",
+          Model: "📝",
+          Color: "🎨",
+          Year: "📅",
+        }[field];
+
+        await ctx.reply(`${emoji} Yangi ${field.toLowerCase()}ni kiriting:`, {
+          parse_mode: "HTML",
+          ...Markup.removeKeyboard(),
+        });
+      }
+    } catch (err) {
+      console.log(`onEditCar${field} error:`, err);
     }
   }
 }

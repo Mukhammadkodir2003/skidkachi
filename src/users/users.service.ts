@@ -15,12 +15,21 @@ import * as uuid from "uuid";
 import { MailService } from "../mail/mail.service";
 import { FindUserDto } from "./dto/find-user.dto";
 import { Op } from "sequelize";
+import { BotService } from "../bot/bot.service";
+import * as otpGenerator from "otp-generator";
+import { PhoneUserDto } from "./dto/phone-user.dto";
+import { Otp } from "../otp/models/otp.model";
+import { AddMinutesToDate } from "../helpers/addMinutes";
+import { decode, encode } from "../helpers/crypto";
+import { VerifyOtpDto } from "./dto/verify_otp.dto";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(Users) private readonly usersModel: typeof Users,
+    @InjectModel(Otp) private readonly otpModel: typeof Otp,
     private readonly jwtService: JwtService,
+    private readonly botService: BotService,
     private readonly mailService: MailService
   ) {}
 
@@ -156,5 +165,85 @@ export class UsersService {
       throw new NotFoundException("Users not found");
     }
     return users;
+  }
+
+  async newOtp(PhoneUserDto: PhoneUserDto) {
+    const phone_number = PhoneUserDto.phone;
+    const otp = otpGenerator.generate(4, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const isSent = await this.botService.sendOtp(phone_number, otp);
+    if (!isSent) {
+      throw new BadRequestException("Avval botdan ro'yxatdan o'ting");
+    }
+
+    // ----------SMS----------
+    const now = new Date();
+    const expiration_time = AddMinutesToDate(now, 5);
+    await this.otpModel.destroy({ where: { phone_number } });
+    const newOtpData = await this.otpModel.create({
+      id: uuid.v4(),
+      otp,
+      phone_number,
+      expiration_time,
+    });
+
+    const details = {
+      timestamp: now,
+      phone_number,
+      otp_id: newOtpData.id,
+    };
+
+    const encodedData = await encode(JSON.stringify(details));
+
+    return {
+      message: "OTP botga yuborildi",
+      verification_key: encodedData,
+    };
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    const { verification_key, phone: phone_number, otp } = verifyOtpDto;
+
+    const currentDate = new Date();
+    const decodedData = await decode(verification_key);
+    const details = JSON.parse(decodedData);
+
+    if (details.phone_number != phone_number) {
+      throw new BadRequestException("Otp bu telefon raqamga yuborilmagan");
+    }
+
+    const resultOTP = await this.otpModel.findByPk(details.otp_id);
+    if (!resultOTP == null) {
+      throw new BadRequestException("Bunday OTP mavjud emas");
+    }
+    if (resultOTP?.verified) {
+      throw new BadRequestException("Bu OTP tasdiqlangan");
+    }
+    if (resultOTP!.expiration_time < currentDate) {
+      throw new BadRequestException("OTP muddati tugagan");
+    }
+    if (resultOTP?.otp != otp) {
+      throw new BadRequestException("OTP kod noto'g'ri");
+    }
+    const user = await this.usersModel.update(
+      { is_owner: true },
+      { where: { phone: phone_number }, returning: true }
+    );
+
+    if (!user[1][0]) {
+      throw new NotFoundException("User topilmadi");
+    }
+
+    await this.otpModel.update(
+      { verified: true },
+      { where: { id: details.otp_id } }
+    );
+
+    return {
+      message: "Tabriklaymiz, siz owner bo'ldingiz",
+    };
   }
 }

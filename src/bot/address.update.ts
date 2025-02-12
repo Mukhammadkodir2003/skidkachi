@@ -29,11 +29,6 @@ export class AddressUpdate {
     await this.addressService.onCommandMyAddresses(ctx);
   }
 
-  @On("location")
-  async onCommandNearAddresses(@Ctx() ctx: Context) {
-    await this.addressService.onCommandNearAddresses;
-  }
-
   @Action(/^getLoc_+\d+/)
   async onClickLocation(@Ctx() ctx: Context) {
     await this.addressService.onClickLocation(ctx);
